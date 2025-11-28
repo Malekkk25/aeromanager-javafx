@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.projet_java_vols.Gestion_des_vols.Controller.GestionAeroportsController"
+            prefWidth="1200"
+            prefHeight="700"
+            style="-fx-background-color: #f0f8ff;">
+
+    <top>
+        <VBox>
+
+            <HBox alignment="CENTER_LEFT" spacing="0"
+                  style="-fx-background-color: white; -fx-padding: 12 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);">
+
+
+                <HBox alignment="CENTER" spacing="8" style="-fx-padding: 0 15 0 0;">
+                    <Label text="✈ " style="-fx-font-size: 24px;"/>
+                    <Label text="AeroManager"
+                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1e3a8a;"/>
+                </HBox>
+
+                <Separator orientation="VERTICAL" style="-fx-background-color: #e5e7eb;">
+                    <HBox.margin>
+                        <Insets left="10" right="15"/>
+                    </HBox.margin>
+                </Separator>
+
+
+                <HBox spacing="8" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                    <Button  fx:id="btnMenuEmployes" text="👥 Employés"
+                            onAction="#allerEmploye"
+                            onMouseEntered="#handleMouseEntered" onMouseExited="#handleMouseExited"
+                            style="-fx-background-color: transparent; -fx-text-fill: #475569; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8; -fx-border-color: transparent; -fx-cursor: hand;"/>
+
+
+                    <Button  fx:id="btnMenuAeroports" text="🏢 Aéroports" onAction="#allerAeroports"
+
+                            style="-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8; -fx-cursor: hand;"
+                           />
+
+                    <Button fx:id="btnMenuVols" text="✈ Vols" onAction="#allerVols"
+                            style="-fx-background-color: transparent; -fx-text-fill: #475569; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8; -fx-border-color: transparent; -fx-cursor: hand;"
+                            onMouseEntered="#handleMouseEntered" onMouseExited="#handleMouseExited"/>
+
+                    <Button fx:id="btnMenuEscales" text="🛬 Escales" onAction="#allerEscales"
+                            style="-fx-background-color: transparent; -fx-text-fill: #475569; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8; -fx-border-color: transparent; -fx-cursor: hand;"
+                            onMouseEntered="#handleMouseEntered" onMouseExited="#handleMouseExited"/>
+
+                    <Button fx:id="btnMenuReservations" text="🎫 Réservations" onAction="#allerReservations"
+                            style="-fx-background-color: transparent; -fx-text-fill: #475569; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8; -fx-border-color: transparent; -fx-cursor: hand;"
+                            onMouseEntered="#handleMouseEntered" onMouseExited="#handleMouseExited"/>
+
+
+                </HBox>
+
+
+                <HBox spacing="10" alignment="CENTER_RIGHT">
+
+
+                    <Separator orientation="VERTICAL" style="-fx-background-color: #e5e7eb;">
+                        <HBox.margin>
+                            <Insets left="5" right="5"/>
+                        </HBox.margin>
+                    </Separator>
+
+                    <HBox alignment="CENTER" spacing="8"
+                          style="-fx-background-color: #eff6ff; -fx-padding: 6 12; -fx-background-radius: 20;">
+                        <Label text="👤" style="-fx-font-size: 14px;"/>
+                        <Label text="Admin"
+                               style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #1e40af;"/>
+                    </HBox>
+                </HBox>
+            </HBox>
+            <HBox alignment="CENTER" spacing="8"
+                  style="-fx-background-color: linear-gradient(to right, #1e3a8a, #2563eb); -fx-padding: 8 14;">
+                <Label text="✈" style="-fx-text-fill: white; -fx-font-size: 20px;"/>
+                <Label text="Gestion des Aéroports"
+                       style="-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                <Label text="•" style="-fx-text-fill: #93c5fd; -fx-font-size: 14px;"/>
+                <Label text="Système de gestion des aéroports internationaux"
+                       style="-fx-text-fill: #bfdbfe; -fx-font-size: 11px;"/>
+            </HBox>
+
+        </VBox>
+
+    </top>
+
+    <center>
+        <VBox fx:id="vboxFormulaire" spacing="10" style="-fx-padding: 10;">
+
+            <VBox  fx:id="containerSaisie" spacing="8"
+                  style="-fx-background-color: white; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.09), 10, 0, 0, 1); -fx-padding: 14;">
+                <Label text="📝 Informations de l'Aéroport"
+                       style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1e3a8a;"/>
+                <Separator style="-fx-background-color: #2563eb;"/>
+                <GridPane hgap="10" vgap="7">
+                    <Label text="Code Aéroport:"
+                           style="-fx-font-weight: bold; -fx-text-fill: #1e40af;"
+                           GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                    <TextField fx:id="txtCodeAeroport"
+                               promptText="Ex: CDG"
+                               style="-fx-background-color: #eff6ff; -fx-border-color: #3b82f6; -fx-border-radius: 5; -fx-background-radius: 5;"
+                               GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                    <Label text="Nom:"
+                           style="-fx-font-weight: bold; -fx-text-fill: #1e40af;"
+                           GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+                    <TextField fx:id="txtNom"
+                               promptText="Nom complet"
+                               style="-fx-background-color: #eff6ff; -fx-border-color: #3b82f6; -fx-border-radius: 5; -fx-background-radius: 5;"
+                               GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+                    <Label text="Pays:"
+                           style="-fx-font-weight: bold; -fx-text-fill: #1e40af;"
+                           GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                    <TextField fx:id="txtPays"
+                               promptText="Pays"
+                               style="-fx-background-color: #eff6ff; -fx-border-color: #3b82f6; -fx-border-radius: 5; -fx-background-radius: 5;"
+                               GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                    <Label text="Ville:"
+                           style="-fx-font-weight: bold; -fx-text-fill: #1e40af;"
+                           GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+                    <TextField fx:id="txtVille"
+                               promptText="Ville"
+                               style="-fx-background-color: #eff6ff; -fx-border-color: #3b82f6; -fx-border-radius: 5; -fx-background-radius: 5;"
+                               GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="90" prefWidth="100"/>
+                        <ColumnConstraints minWidth="120" prefWidth="140"/>
+                        <ColumnConstraints minWidth="90" prefWidth="100"/>
+                        <ColumnConstraints minWidth="120" prefWidth="140"/>
+                    </columnConstraints>
+                </GridPane>
+                <HBox spacing="8" alignment="CENTER">
+                    <Button fx:id="btnAjouter"
+                            text="➕ Ajouter"
+                            onAction="#ajouterAeroport"
+                            style="-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 7 15; -fx-background-radius: 7;"/>
+                    <Button fx:id="btnAnnuler"
+                            text="❌ Annuler"
+                            onAction="#annulerAction"
+                            style="-fx-background-color: #6b7280; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 7 15; -fx-background-radius: 7;"/>
+                </HBox>
+            </VBox>
+
+            <VBox spacing="7"
+                  style="-fx-background-color: white; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08),10,0,0,2); -fx-padding: 10;"
+                  VBox.vgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT" spacing="9">
+                    <Label text="📋 Liste des Aéroports"
+                           style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1e3a8a;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="nbrAeroports"
+                           text="Total: 0"
+                           style="-fx-font-size: 12px; -fx-text-fill: #2563eb; -fx-font-weight: bold; -fx-background-color: #dbeafe; -fx-padding: 4 10; -fx-background-radius: 15;"/>
+                </HBox>
+                <Separator style="-fx-background-color: #2563eb;"/>
+                <HBox spacing="7" alignment="CENTER_LEFT">
+                    <Label text="🔍" style="-fx-font-size: 15px;"/>
+                    <TextField fx:id="txtRecherche"
+                               promptText="Rechercher aéroport..."
+                               style="-fx-background-color: #eff6ff; -fx-border-color: #3b82f6; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 8; -fx-font-size: 12px;"
+                               HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <TableView fx:id="tableAeroports"
+                           style="-fx-background-color: #f9fafb; -fx-border-color: #e5e7eb; -fx-border-radius: 6; -fx-background-radius: 6;"
+                           VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colCode" text="Code" prefWidth="90"
+                                     style="-fx-alignment: CENTER; -fx-font-weight: bold;"/>
+                        <TableColumn fx:id="colNom" text="Nom" prefWidth="180"/>
+                        <TableColumn fx:id="colVille" text="Ville" prefWidth="130"/>
+                        <TableColumn fx:id="colPays" text="Pays" prefWidth="130"/>
+                    </columns>
+                    <placeholder>
+                        <VBox spacing="1" alignment="CENTER">
+                            <Label text="✈ " style="-fx-font-size: 38px; -fx-text-fill: #93c5fd;"/>
+                            <Label text="Aucune aéroport enregistrée"
+                                   style="-fx-font-size: 13px; -fx-text-fill: #6b7280;"/>
+                        </VBox>
+                    </placeholder>
+                </TableView>
+            </VBox>
+        </VBox>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER" spacing="13"
+              style="-fx-background-color: linear-gradient(to right, #1e3a8a, #2563eb); -fx-padding: 9;">
+            <Button fx:id="btnSupprimer"
+                    text="🗑️ Supprimer"
+                    onAction="#supprimerAeroport"
+                    style="-fx-background-color: #dc2626; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 7 18; -fx-background-radius: 8;"/>
+
+            <Region HBox.hgrow="ALWAYS"/>
+        </HBox>
+    </bottom>
+</BorderPane>
