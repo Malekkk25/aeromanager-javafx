@@ -1,4 +1,4 @@
-package com.example.projet_java_vols.Gestion_des_vols.Model;
+package com.example.projet_java_vols.Gestion_des_utilisateurs.Model;
 
 public enum ClasseVol {
     PREMIERE,

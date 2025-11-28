@@ -1,6 +1,7 @@
-package com.example.projetjava;
+package com.example.projet_java_vols.Gestion_des_utilisateurs.Model;
 
-import java.util.ArrayList;
+import com.example.projet_java_vols.Gestion_des_vols.Model.StatutVol;
+import com.example.projet_java_vols.Gestion_des_vols.Model.Vol;
 
 import java.util.ArrayList;
 
@@ -10,7 +11,7 @@ public final class AgentVol extends Employe {
     private String nomCompagnie;
     private String paysOrigine;
     private int flotte;
-    private ArrayList<VolSimple> vols;
+    private ArrayList<Vol> vols;
 
     public AgentVol(int idEmploye, String nom, String prenom, String email,
                     String telephone, String motDePasse, String codeCompagnie,
@@ -55,21 +56,21 @@ public final class AgentVol extends Employe {
         this.flotte = flotte;
     }
 
-    public ArrayList<VolSimple> getVols() {
+    public ArrayList<Vol> getVols() {
         return vols;
     }
 
-    public void ajouterVol(VolSimple vol) {
+    public void ajouterVol(Vol vol) {
         if (vol != null) {
             vols.add(vol);
-            System.out.println("Vol " + vol.numeroVol() + " ajouté avec succès.");
+            System.out.println("Vol " + vol.getNumVol() + " ajouté avec succès.");
         }
     }
 
-    public void supprimerVol(int idVol) throws Exception {
-        VolSimple volASupprimer = null;
-        for (VolSimple v : vols) {
-            if (v.idVol() == idVol) {
+    public void supprimerVol(String idVol) throws Exception {
+        Vol volASupprimer = null;
+        for (Vol v : vols) {
+            if (v.getNumVol() == idVol) {
                 volASupprimer = v;
                 break;
             }
@@ -83,12 +84,12 @@ public final class AgentVol extends Employe {
         System.out.println("Vol " + idVol + " supprimé avec succès.");
     }
 
-    public void changerStatutVol(int idVol, String nouveauStatut) throws Exception {
+    public void changerStatutVol(String idVol, StatutVol nouveauStatut) throws Exception {
         for (int i = 0; i < vols.size(); i++) {
-            VolSimple v = vols.get(i);
-            if (v.idVol() == idVol) {
-                // Remplacer par une nouvelle instance avec le nouveau statut
-                vols.set(i, v.avecStatut(nouveauStatut));
+            Vol v = vols.get(i);
+            if (v.getNumVol() == idVol) {
+
+                vols.set(i, v.setStatutVol(nouveauStatut));
                 System.out.println("Statut du vol " + idVol + " changé en " + nouveauStatut);
                 return;
             }
@@ -97,24 +98,24 @@ public final class AgentVol extends Employe {
     }
 
     // STREAM + LAMBDA - chercher vol par numéro
-    public VolSimple rechercherVolParNumero(String numeroVol) {
+    public Vol rechercherVolParNumero(String numeroVol) {
         return vols.stream()
-                .filter(v -> v.numeroVol().equals(numeroVol))
+                .filter(v -> v.getNumVol().equals(numeroVol))
                 .findFirst()
                 .orElse(null);
     }
 
     // STREAM + LAMBDA - filtrer vols disponibles
-    public ArrayList<VolSimple> getVolsDisponibles() {
+    public ArrayList<Vol> getVolsDisponibles() {
         return vols.stream()
-                .filter(v -> v.nbPlaces() > 0)
+                .filter(v -> v.getNbPlacesDisponibles() > 0)
                 .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
     }
 
     // STREAM + LAMBDA - compter total places
     public int getTotalPlaces() {
         return vols.stream()
-                .mapToInt(VolSimple::nbPlaces)
+                .mapToInt(Vol::getNbPlacesDisponibles)
                 .sum();
     }
 
@@ -123,7 +124,6 @@ public final class AgentVol extends Employe {
         if (vols.isEmpty()) {
             System.out.println("Aucun vol");
         } else {
-            // LAMBDA - forEach
             vols.forEach(v -> System.out.println(v));
         }
     }

@@ -1,13 +1,14 @@
-package com.example.projet_java_vols.Gestion_des_vols.Controller;
+package com.example.projet_java_vols.Gestion_des_utilisateurs.Controller;
 
-import com.example.projet_java_vols.Gestion_des_utilisateurs.Model.StatutVol;
+import com.example.projet_java_vols.Gestion_des_utilisateurs.Model.ClasseVol;
+import com.example.projet_java_vols.Gestion_des_utilisateurs.Model.Reservation;
+import com.example.projet_java_vols.Gestion_des_vols.Model.StatutVol;
 import com.example.projet_java_vols.Gestion_des_vols.Model.*;
 import com.example.projet_java_vols.ConnexionDB;
-import com.example.projet_java_vols.UserSession;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.geometry.HPos;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -22,7 +23,6 @@ import javafx.fxml.FXMLLoader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,7 +40,7 @@ public class GestionReservationsController {
     @FXML private Button btnSupprimer;
     @FXML private TextField txtRecherche;
     @FXML private Label lblNombreReservations;
-    @FXML private VBox containerSaisie;     // Le formulaire
+    @FXML private VBox containerSaisie;
     @FXML private Button btnMenuEmployes;
     @FXML private TableView<Reservation> tableReservations;
     @FXML private TableColumn<Reservation, Integer> colIdReservation;
@@ -89,16 +89,12 @@ public class GestionReservationsController {
         String role = UserSession.getRole();
         if (role == null) role = "INVITE";
 
-        // 1. GESTION DU MENU ADMIN (Employés)
-        // Seul l'Admin le voit
         boolean isAdmin = role.equalsIgnoreCase("ADMIN") || role.equalsIgnoreCase("ADMINISTRATEUR");
         if (btnMenuEmployes != null) {
             btnMenuEmployes.setVisible(isAdmin);
             btnMenuEmployes.setManaged(isAdmin);
         }
 
-        // 2. GESTION DU FORMULAIRE RÉSERVATION
-        // Visible UNIQUEMENT pour AGENT_ENREG
         boolean isAgentEnreg = role.equalsIgnoreCase("AGENT_ENREG");
 
         if (containerSaisie != null) {
@@ -106,7 +102,6 @@ public class GestionReservationsController {
             containerSaisie.setManaged(isAgentEnreg);
         }
 
-        // Cacher les boutons d'action si ce n'est pas un Agent Enreg
         if (!isAgentEnreg) {
             btnAjouter.setVisible(false);
             btnModifier.setVisible(false);
@@ -127,8 +122,8 @@ public class GestionReservationsController {
                     v = new VolInternational(
                             rs.getString("numVol"),
                             rs.getInt("nbPlaces"),
-                            rs.getDouble("prixBase"),    // AJOUTÉ
-                            rs.getDouble("prixVol"),     // AJOUTÉ
+                            rs.getDouble("prixBase"),
+                            rs.getDouble("prixVol"),
                             StatutVol.valueOf(rs.getString("statut")),
                             rs.getString("paysDestination"),
                             new ArrayList<>(),
@@ -169,7 +164,7 @@ public class GestionReservationsController {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        cmbVol.setItems(numsVols); // Set des numéros dans la comboBox
+        cmbVol.setItems(numsVols);
     }
 
     private Aeroport chargerAeroport(String idAeroport) {
@@ -212,7 +207,7 @@ public class GestionReservationsController {
         ClasseVol classe = cmbClasse.getValue();
         Vol volObj = getVolByNum(volNum);
         if (volNum == null || classe == null || volObj == null) { lblPrixTotal.setText("-- €"); return; }
-        double base = volObj.getPrixVol(); // Assure-toi que getPrixBase existe dans Vol
+        double base = volObj.getPrixVol();
         double prix = switch (classe) {
             case ECONOMIQUE -> base;
             case BUSINESS -> base * 1.5;
@@ -267,7 +262,6 @@ public class GestionReservationsController {
             stmt.executeUpdate();
             afficherSucces("Réservation ajoutée avec succès !");
 
-            // Diminuer places sur ce vol :
             try (PreparedStatement psUpdate = conn.prepareStatement(
                     "UPDATE vol SET nbPlaces = nbPlaces - 1 WHERE numVol = ? AND nbPlaces > 0")) {
                 psUpdate.setString(1, volNum);
@@ -345,21 +339,18 @@ public class GestionReservationsController {
     }
 
     private boolean validerChamps() {
-        // Vol obligatoire
         if (cmbVol.getValue() == null) {
             afficherErreur("Veuillez sélectionner un numéro de vol.");
             cmbVol.requestFocus();
             return false;
         }
 
-        // Classe obligatoire
         if (cmbClasse.getValue() == null) {
             afficherErreur("Veuillez sélectionner la classe.");
             cmbClasse.requestFocus();
             return false;
         }
 
-        // Passeport obligatoire, pas de contrôle de format
         String passeportTxt = txtPasseport.getText();
         if (passeportTxt == null || passeportTxt.trim().isEmpty()) {
             afficherErreur("Le numéro de passeport est obligatoire.");
@@ -367,7 +358,6 @@ public class GestionReservationsController {
             return false;
         }
 
-        // Unicité pour le même vol (hors modification sur soi-même)
         String numVol = cmbVol.getValue();
         for (Reservation r : listeReservations) {
             if (r.getNumVol().equals(numVol) && String.valueOf(r.getPasseport_pasasager()).equals(passeportTxt.trim())
@@ -382,14 +372,12 @@ public class GestionReservationsController {
             Vol volObj = getVolByNum(volNum);
             if (volObj != null) {
                 int nbReservations = 0;
-                // Calculer combien de places déjà réservées pour ce vol
                 try (Connection conn = ConnexionDB.getConnection();
                      PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) FROM reservation WHERE numVol = ?")) {
                     stmt.setString(1, volNum);
                     ResultSet rs = stmt.executeQuery();
                     if (rs.next()) nbReservations = rs.getInt(1);
                 } catch (Exception ex) { ex.printStackTrace(); }
-                // Comparer places dispo = total - réservées
                 int placesRestantes = volObj.getNbPlacesDisponibles() - nbReservations;
                 if (placesRestantes <= 0) {
                     afficherErreur("Ce vol est complet : aucune place disponible.");
@@ -401,7 +389,6 @@ public class GestionReservationsController {
 
         }
 
-        // Prix total valide
         String prixTxt = lblPrixTotal.getText().replace(" €", "").replace("--", "0").trim();
         try {
             double prix = Double.parseDouble(prixTxt);
@@ -530,8 +517,6 @@ public class GestionReservationsController {
                 "-fx-border-color: transparent; -fx-cursor: hand;");
     }
 
-    // MÉTHODE POUR CRÉER LE TICKET MODERNE - Remplacez votre méthode imprimerTicket() et creerTicketModerne()
-
     @FXML
     private void imprimerTicket() {
         if (reservationSelectionnee == null) {
@@ -554,7 +539,6 @@ public class GestionReservationsController {
         VBox ticket = new VBox(0);
         ticket.setStyle("-fx-background-color: white;");
 
-        // Récupérer les informations du vol
         Vol vol = getVolByNumero(reservation.getNumVol());
 
         String villeDepart = vol != null && vol.getAeroportDepart() != null ? vol.getAeroportDepart().getVille() : "N/A";
@@ -566,17 +550,14 @@ public class GestionReservationsController {
         String heureDepart = vol != null && vol.getHeureDepart() != null ?
                 vol.getHeureDepart().format(DateTimeFormatter.ofPattern("HH:mm")) : "N/A";
 
-        // ===== PARTIE PRINCIPALE DU BILLET (Gauche) =====
         HBox billetComplet = new HBox(0);
 
-        // SECTION GAUCHE - PRINCIPALE
         VBox sectionPrincipale = new VBox(0);
         sectionPrincipale.setPrefWidth(600);
         sectionPrincipale.setPrefHeight(600);
         sectionPrincipale.setStyle("-fx-background-color: linear-gradient(to bottom, #0ea5e9, #0284c7); " +
                 "-fx-padding: 0;");
 
-        // En-tête bleu avec logo
         HBox entete = new HBox(15);
         entete.setStyle("-fx-padding: 20 30; -fx-background-color: rgba(255,255,255,0.1);");
         entete.setAlignment(Pos.CENTER_LEFT);
@@ -593,18 +574,15 @@ public class GestionReservationsController {
 
         entete.getChildren().addAll(logoAvion, logoText);
 
-        // Section "BOARDING PASS"
         HBox boardingPassBar = new HBox();
         boardingPassBar.setStyle("-fx-background-color: white; -fx-padding: 8 30;");
         Label boardingPass = new Label("BOARDING PASS");
         boardingPass.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #0284c7; -fx-letter-spacing: 2px;");
         boardingPassBar.getChildren().add(boardingPass);
 
-        // Informations principales
         VBox infoPrincipale = new VBox(25);
         infoPrincipale.setStyle("-fx-padding: 25 30;");
 
-        // LIGNE 1 : Passager et Date
         GridPane ligne1 = new GridPane();
         ligne1.setHgap(50);
         ligne1.setVgap(8);
@@ -612,7 +590,6 @@ public class GestionReservationsController {
         creerChampBillet(ligne1, "PASSENGER NAME", "PASSAGER " + reservation.getPasseport_pasasager(), 0, 0);
         creerChampBillet(ligne1, "DATE", dateVol, 1, 0);
 
-        // LIGNE 2 : Départ → Arrivée (GRAND)
         HBox routeBox = new HBox(20);
         routeBox.setAlignment(Pos.CENTER);
         routeBox.setStyle("-fx-padding: 20 0;");
@@ -642,7 +619,6 @@ public class GestionReservationsController {
 
         routeBox.getChildren().addAll(departBox, flecheAvion, arriveeBox);
 
-        // LIGNE 3 : Détails du vol
         GridPane ligne3 = new GridPane();
         ligne3.setHgap(40);
         ligne3.setVgap(12);
@@ -663,7 +639,6 @@ public class GestionReservationsController {
 
         sectionPrincipale.getChildren().addAll(entete, boardingPassBar, infoPrincipale);
 
-        // ===== SECTION DROITE - TALON (Stub) =====
         VBox sectionTalon = new VBox(0);
         sectionTalon.setPrefWidth(200);
         sectionTalon.setStyle("-fx-background-color: linear-gradient(to bottom, #0ea5e9, #0284c7); " +
@@ -673,11 +648,9 @@ public class GestionReservationsController {
         talonContent.setStyle("-fx-padding: 30 20;");
         talonContent.setAlignment(Pos.CENTER);
 
-        // Logo mini
         Label miniLogo = new Label("✈");
         miniLogo.setStyle("-fx-font-size: 28px; -fx-text-fill: white;");
 
-        // Code-barres vertical simulé
         VBox barcodeVertical = new VBox(2);
         barcodeVertical.setAlignment(Pos.CENTER);
         for (int i = 0; i < 25; i++) {
@@ -688,7 +661,6 @@ public class GestionReservationsController {
             barcodeVertical.getChildren().add(barre);
         }
 
-        // Infos talon
         VBox infosTalon = new VBox(15);
         infosTalon.setAlignment(Pos.CENTER);
 
@@ -703,7 +675,6 @@ public class GestionReservationsController {
 
         billetComplet.getChildren().addAll(sectionPrincipale, sectionTalon);
 
-        // ===== CODE-BARRES BAS =====
         VBox barcodeSection = new VBox(8);
         barcodeSection.setStyle("-fx-padding: 20 30; -fx-background-color: white;");
         barcodeSection.setAlignment(Pos.CENTER);
@@ -723,7 +694,6 @@ public class GestionReservationsController {
 
         barcodeSection.getChildren().addAll(barcode, codeText);
 
-        // ===== BOUTONS D'ACTION =====
         HBox boutons = new HBox(15);
         boutons.setStyle("-fx-padding: 20 30; -fx-background-color: white;");
         boutons.setAlignment(Pos.CENTER);
@@ -743,13 +713,11 @@ public class GestionReservationsController {
 
         boutons.getChildren().addAll(btnImprimer, btnPDF, btnFermer);
 
-        // Assembler tout
         ticket.getChildren().addAll(billetComplet, barcodeSection, boutons);
 
         return ticket;
     }
 
-    // Méthodes utilitaires
     private void creerChampBillet(GridPane grid, String label, String valeur, int col, int row) {
         VBox box = new VBox(4);
         Label lbl = new Label(label);
@@ -796,8 +764,8 @@ public class GestionReservationsController {
                         v = new VolInternational(
                                 rs.getString("numVol"),
                                 rs.getInt("nbPlaces"),
-                                rs.getDouble("prixBase"),    // AJOUTÉ
-                                rs.getDouble("prixVol"),     // AJOUTÉ
+                                rs.getDouble("prixBase"),
+                                rs.getDouble("prixVol"),
                                 StatutVol.valueOf(rs.getString("statut")),
                                 rs.getString("paysDestination"),
                                 new ArrayList<>(),

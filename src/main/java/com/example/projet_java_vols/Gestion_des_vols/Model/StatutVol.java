@@ -1,4 +1,4 @@
-package com.example.projet_java_vols.Gestion_des_utilisateurs.Model;
+package com.example.projet_java_vols.Gestion_des_vols.Model;
 
 public enum StatutVol {
     PROGRAMME,

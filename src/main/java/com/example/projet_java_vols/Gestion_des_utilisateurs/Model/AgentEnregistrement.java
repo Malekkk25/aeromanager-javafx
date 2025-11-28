@@ -1,8 +1,10 @@
-package com.example.projetjava;
+package com.example.projet_java_vols.Gestion_des_utilisateurs.Model;
+
+import com.example.projet_java_vols.Gestion_des_vols.Model.Vol;
 
 import java.util.ArrayList;
 
-// Final car c'est une feuille de la sealed class
+
 public final class AgentEnregistrement extends Employe {
     private String bureauEnregistrement;
     private int comptoir;
@@ -31,13 +33,13 @@ public final class AgentEnregistrement extends Employe {
         this.comptoir = comptoir;
     }
 
-    public void reserverVol(VolSimple vol, int numeroPasseport, int numeroPassager) throws Exception {
-        if (vol.nbPlaces() <= 0) {
-            throw new Exception("Aucune place disponible sur le vol " + vol.numeroVol());
+    public void reserverVol(Vol vol, int numeroPasseport, int numeroPassager) throws Exception {
+        if (vol.getNbPlacesDisponibles() <= 0) {
+            throw new Exception("Aucune place disponible sur le vol " + vol.getNumVol());
         }
 
         System.out.println("Réservation effectuée par " + getNom() +
-                " pour le vol " + vol.numeroVol() +
+                " pour le vol " + vol.getNumVol() +
                 " - Passeport: " + numeroPasseport +
                 ", Passager: " + numeroPassager);
     }

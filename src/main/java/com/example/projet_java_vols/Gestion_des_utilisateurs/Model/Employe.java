@@ -1,4 +1,4 @@
-package com.example.projetjava;
+package com.example.projet_java_vols.Gestion_des_utilisateurs.Model;
 
 // Sealed class - seuls AgentVol et AgentEnregistrement peuvent hériter
 public abstract sealed class Employe permits AgentVol, AgentEnregistrement {
