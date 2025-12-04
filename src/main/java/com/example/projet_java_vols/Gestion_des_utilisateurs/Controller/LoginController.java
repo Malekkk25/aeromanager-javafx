@@ -38,54 +38,75 @@ public class LoginController {
 
         if (loadingOverlay != null) loadingOverlay.setVisible(true);
 
-        if (username.equals("Admin") && password.equals("admin123")) {
-            System.out.println("✅ Connexion Admin (SuperUser) -> Direction Employés");
+        if (username.equals("malek") && password.equals("123")) {
+            System.out.println("✅ Connexion Admin (SuperUser)");
+            UserSession.login(1, "ADMIN", "malek");
             allerVersEmployes();
             return;
         }
 
-        String role = verifierIdentifiants(username, password);
+        String roleBDD = recupererRoleDepuisBD(username, password);
 
-        if (role != null) {
-            UserSession.login(role, username);
+        if (roleBDD != null) {
+            int idEmploye = chercherIdDansBD(username, password);
 
-            System.out.println("✅ Connexion réussie ! Rôle : " + role);
+            UserSession.login(idEmploye, roleBDD, username);
+
+            System.out.println("✅ Connexion réussie ! ID: " + idEmploye + " Rôle : " + roleBDD);
 
             if (UserSession.isAdmin()) {
                 allerVersEmployes();
             } else {
                 allerVersAeroports();
             }
-
         } else {
             if (loadingOverlay != null) loadingOverlay.setVisible(false);
             afficherErreur("Nom d'utilisateur ou mot de passe incorrect.");
         }
     }
-
-    private String verifierIdentifiants(String user, String pass) {
-        String role = null;
-        String sql = "SELECT typeEmploye FROM employe WHERE (email = ? OR nom = ?) AND motDePasse = ? AND actif = 1";
+    private String recupererRoleDepuisBD(String nom, String mdp) {
+        String sql = "SELECT typeEmploye FROM employe WHERE nom = ? AND motDePasse = ? AND actif = 1";
 
         try (Connection conn = ConnexionDB.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, user);
-            ps.setString(2, user);
-            ps.setString(3, pass);
+            ps.setString(1, nom);
+            ps.setString(2, mdp);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    role = rs.getString("typeEmploye");
+                    String type = rs.getString("typeEmploye");
+
+
+                    if ("AGENT_VOL".equalsIgnoreCase(type)) return "AGENT_VOL";
+                    if ("AGENT_ENREG".equalsIgnoreCase(type)) return "AGENT_ENREG";
+                    return "USER";
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
-            afficherErreur("Erreur DB : " + e.getMessage());
+            System.err.println("Erreur lors de la récupération du rôle : " + e.getMessage());
         }
-        return role;
+
+        return null;
     }
 
+    private int chercherIdDansBD(String nom, String mdp) {
+        String sql = "SELECT idEmploye FROM employe WHERE nom = ? AND motDePasse = ?";
+        try (Connection conn = ConnexionDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nom);
+            ps.setString(2, mdp);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("idEmploye");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
     private void allerVersEmployes() {
         chargerInterface("/com/example/projet_java_vols/Gestion_Employes.fxml", "Gestion des Employés");
     }

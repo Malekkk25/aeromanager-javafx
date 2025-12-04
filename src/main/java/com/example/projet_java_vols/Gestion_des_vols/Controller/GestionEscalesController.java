@@ -6,6 +6,7 @@ import com.example.projet_java_vols.Gestion_des_vols.Model.*;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -16,6 +17,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -66,7 +68,7 @@ public class GestionEscalesController {
 
     private ObservableList<Aeroport> listeAeroports=FXCollections.observableArrayList();
 
-    private final DateTimeFormatter HEURE_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    private final DateTimeFormatter  HEURE_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private Vol volAssocie;
@@ -145,10 +147,7 @@ public class GestionEscalesController {
         }
     }
 
-    private boolean estModeLectureSeule() {
-        String role = UserSession.getRole();
-        return role == null || role.equals("AGENT_ENREG");
-    }
+
     private void chargerAeroportsDepuisBD() {
         listeAeroports.clear();
         try (Connection conn = ConnexionDB.getConnection();
@@ -498,9 +497,6 @@ public class GestionEscalesController {
     }
 
 
-    private int genererIdTemporaire() {
-        return listeEscales.stream().mapToInt(Escale::getIdEscale).max().orElse(0) + 1;
-    }
 
     private String formatHeure(LocalTime time) {
         return time == null ? "" : time.format(HEURE_FORMATTER);
@@ -606,6 +602,17 @@ public class GestionEscalesController {
     }
 
     }
+    public void allerStats(ActionEvent actionEvent) {  try {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_Statistiques.fxml"));
+        Parent root = loader.load();
+        Stage stage = (Stage) btnAjouter.getScene().getWindow();
+        stage.setScene(new Scene(root));
+        stage.setTitle("Statistiques");
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    }
     @FXML
     private void handleMouseEntered(MouseEvent event) {
         Button btn = (Button) event.getSource();
@@ -623,5 +630,31 @@ public class GestionEscalesController {
                 "-fx-padding: 8 16; -fx-background-radius: 8; " +
                 "-fx-border-color: transparent; -fx-cursor: hand;");
     }
+    @FXML
+    private void quitter() {
+        Stage stage = (Stage) btnAjouter.getScene().getWindow();
+        stage.close();
+    }
+    @FXML
+    private void deconnexion() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Login.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) btnAjouter.getScene().getWindow();
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Connexion - AeroManager");
+
+            stage.centerOnScreen();
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Erreur : Impossible de charger la vue Login.fxml");
+        }
+    }
+
 
 }

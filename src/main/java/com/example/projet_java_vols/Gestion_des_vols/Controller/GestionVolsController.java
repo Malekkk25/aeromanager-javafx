@@ -7,6 +7,7 @@ import com.example.projet_java_vols.Gestion_des_vols.Model.*;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -18,6 +19,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -125,10 +127,7 @@ public class GestionVolsController implements Initializable {
         }
     }
 
-    private boolean estModeLectureSeule() {
-        String role = UserSession.getRole();
-        return role == null || role.equals("AGENT_ENREG");
-    }
+
 
     private void chargerAeroports() {
         listeAeroports.clear();
@@ -499,31 +498,64 @@ public class GestionVolsController implements Initializable {
             e.printStackTrace();
         }
     }
+    private boolean hasVolDependencies(String numVol) {
+        String sql = "SELECT COUNT(*) FROM reservation WHERE numVol = ?";
+        try (Connection conn = ConnexionDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, numVol);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt(1);
+                    System.out.println("🔍 Vol " + numVol + " a " + count + " réservation(s)");
+                    return count > 0;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            afficherErreur("Erreur vérification dépendances : " + e.getMessage());
+        }
+        return false;
+    }
 
     @FXML
     private void supprimerVol() {
         if (volSelectionne == null) {
-            afficherErreur("Veuillez sélectionner un vol à supprimer");
+            afficherErreur("Veuillez sélectionner un vol à supprimer.");
             return;
         }
+
+
+        if (hasVolDependencies(volSelectionne.getNumVol())) {
+
+            afficherErreur("Impossible de supprimer ce vol.\n" +
+                    "Il est associé à des réservations.\n" +
+                    "Veuillez d'abord supprimer les réservations liées à ce vol.");
+            return;
+        }
+
+
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
         confirmation.setTitle("Confirmation");
         confirmation.setHeaderText("Supprimer le vol " + volSelectionne.getNumVol());
         confirmation.setContentText("Êtes-vous sûr ?");
-        Optional<ButtonType> resultat = confirmation.showAndWait();
-        if (resultat.isPresent() && resultat.get() == ButtonType.OK) {
+
+        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             try (Connection conn = ConnexionDB.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement("DELETE FROM vol WHERE numVol=?")) {
+                 PreparedStatement stmt = conn.prepareStatement("DELETE FROM vol WHERE numVol = ?")) {
                 stmt.setString(1, volSelectionne.getNumVol());
                 stmt.executeUpdate();
+
+                actualiserListe();
+                afficherSucces("Vol supprimé avec succès !");
+                viderFormulaire();
+                volSelectionne = null;
             } catch (Exception e) {
                 afficherErreur("Erreur lors de la suppression : " + e.getMessage());
+                e.printStackTrace();
             }
-            actualiserListe();
-            afficherSucces("Vol supprimé !");
-            viderFormulaire();
         }
     }
+
 
     @FXML
     private void annulerAction() {
@@ -825,6 +857,17 @@ public class GestionVolsController implements Initializable {
     }
 
     }
+    public void allerStats(ActionEvent actionEvent) {  try {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_Statistiques.fxml"));
+        Parent root = loader.load();
+        Stage stage = (Stage) btnAjouter.getScene().getWindow();
+        stage.setScene(new Scene(root));
+        stage.setTitle("Statistiques");
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    }
     @FXML
     private void suggérerHoraire() {
         if (cmbAeroportDepart.getValue() == null || dpDateDepart.getValue() == null) {
@@ -906,4 +949,30 @@ public class GestionVolsController implements Initializable {
         Button btn = (Button) event.getSource();
         btn.setStyle(btn.getStyle().replace("-fx-background-color: #e0e7ff;", ""));
     }
+    @FXML
+    private void quitter() {
+        Stage stage = (Stage) btnAjouter.getScene().getWindow();
+        stage.close();
+    }
+    @FXML
+    private void deconnexion() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Login.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) btnAjouter.getScene().getWindow();
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Connexion - AeroManager");
+
+            stage.centerOnScreen();
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Erreur : Impossible de charger la vue Login.fxml");
+        }
+    }
+
 }

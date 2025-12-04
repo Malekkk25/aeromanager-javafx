@@ -17,6 +17,7 @@ import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -242,7 +243,20 @@ public class GestionStatsController implements Initializable {
         Parent root = loader.load();
         Stage stage = (Stage) lblVolsJour.getScene().getWindow();
         stage.setScene(new Scene(root));
-        stage.setTitle("Gestion des Réservations");
+        stage.setTitle("Gestion des employées");
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    }
+
+
+    public void allerStats(ActionEvent actionEvent) {  try {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_Statistiques.fxml"));
+        Parent root = loader.load();
+        Stage stage = (Stage) lblVolsJour.getScene().getWindow();
+        stage.setScene(new Scene(root));
+        stage.setTitle("Statistiques");
     } catch (Exception e) {
         e.printStackTrace();
     }
@@ -261,7 +275,31 @@ public class GestionStatsController implements Initializable {
         btn.setStyle(btn.getStyle().replace("-fx-background-color: #e0e7ff;", ""));
     }
 
+
     @FXML
-    private void retourStats() {
+    private void quitter() {
+        Stage stage = (Stage) lblVolsJour.getScene().getWindow();
+        stage.close();
     }
+    @FXML
+    private void deconnexion() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Login.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) lblVolsJour.getScene().getWindow();
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Connexion - AeroManager");
+
+            stage.centerOnScreen();
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Erreur : Impossible de charger la vue Login.fxml");
+        }
+    }
+
 }

@@ -19,6 +19,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -405,6 +406,10 @@ public class GestionEmployesController {
         vboxAgentEnreg.setManaged(false);
     }
 
+
+
+
+
     @FXML
     private void supprimerEmployeSelection() {
         Employe sel = tableEmployes.getSelectionModel().getSelectedItem();
@@ -413,32 +418,60 @@ public class GestionEmployesController {
             return;
         }
 
+
+        if (hasEmployeDependencies(sel.getIdEmploye())) {
+
+            afficherErreur("Impossible de supprimer cet employé.\n" +
+                    "Il est associé à des réservations.\n" +
+                    "Veuillez d'abord supprimer ou réassigner ses réservations.");
+            return;
+        }
+
+
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
         confirmation.setTitle("Confirmation");
         confirmation.setHeaderText("Supprimer l'employé " + sel.getNom() + " " + sel.getPrenom());
         confirmation.setContentText("Êtes-vous sûr ?");
-        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
-            return;
-        }
 
-        try {
-            administrateur.supprimerEmploye(sel.getIdEmploye());
-
+        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             try (Connection conn = ConnexionDB.getConnection();
                  PreparedStatement ps = conn.prepareStatement(
                          "DELETE FROM employe WHERE idEmploye = ?")) {
                 ps.setInt(1, sel.getIdEmploye());
                 ps.executeUpdate();
-            }
 
-            rafraichir();
-            effacerFormulaire();
-            afficherSucces("Employé supprimé avec succès.");
-        } catch (Exception e) {
-            afficherErreur("Erreur: " + e.getMessage());
-            e.printStackTrace();
+                administrateur.supprimerEmploye(sel.getIdEmploye());
+                rafraichir();
+                effacerFormulaire();
+                afficherSucces("Employé supprimé avec succès.");
+            } catch (Exception e) {
+                e.printStackTrace();
+                afficherErreur("Erreur suppression : " + e.getMessage());
+            }
         }
     }
+
+
+
+    private boolean hasEmployeDependencies(int idEmploye) {
+        String sql = "SELECT COUNT(*) FROM reservation WHERE idEmploye = ?";
+        try (Connection conn = ConnexionDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idEmploye);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt(1);
+                    System.out.println("🔍 Employé " + idEmploye + " a " + count + " réservation(s)");
+                    return count > 0;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            afficherErreur("Erreur vérification dépendances : " + e.getMessage());
+        }
+        return false;
+    }
+
 
     @FXML
     private void modifierEmployeSelection() {
@@ -601,6 +634,10 @@ public class GestionEmployesController {
     private void allerReservations() {
         changerScene("/com/example/projet_java_vols/Gestion_Reservations.fxml", "Gestion des Réservations");
     }
+    @FXML
+    private void allerStats() {
+        changerScene("/com/example/projet_java_vols/Gestion_Statistiques.fxml", "Statistiques");
+    }
 
     private void changerScene(String fxml, String titre) {
         try {
@@ -641,4 +678,25 @@ public class GestionEmployesController {
         alert.setContentText(message);
         alert.showAndWait();
     }
+    @FXML
+    private void deconnexion() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Login.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) tableEmployes.getScene().getWindow();
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Connexion - AeroManager");
+
+            stage.centerOnScreen();
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Erreur : Impossible de charger la vue Login.fxml");
+        }
+    }
+
 }

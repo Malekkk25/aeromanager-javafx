@@ -8,6 +8,7 @@ import com.example.projet_java_vols.ConnexionDB;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -20,6 +21,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.fxml.FXMLLoader;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -96,13 +98,14 @@ public class GestionReservationsController {
         }
 
         boolean isAgentEnreg = role.equalsIgnoreCase("AGENT_ENREG");
+        boolean aDroitModification = isAdmin || isAgentEnreg;
 
         if (containerSaisie != null) {
-            containerSaisie.setVisible(isAgentEnreg);
-            containerSaisie.setManaged(isAgentEnreg);
+            containerSaisie.setVisible(aDroitModification);
+            containerSaisie.setManaged(aDroitModification);
         }
 
-        if (!isAgentEnreg) {
+        if (!aDroitModification) {
             btnAjouter.setVisible(false);
             btnModifier.setVisible(false);
             btnSupprimer.setVisible(false);
@@ -242,9 +245,11 @@ public class GestionReservationsController {
     @FXML
     private void ajouterReservation() {
         if (!validerChamps()) return;
+
         String volNum = cmbVol.getValue();
         Vol volObj = getVolByNum(volNum);
         if (volObj == null) return;
+
         double prix = 0;
         try {
             prix = Double.parseDouble(lblPrixTotal.getText().replace(" €", ""));
@@ -252,13 +257,24 @@ public class GestionReservationsController {
             lblPrixTotal.setText("-- €");
             return;
         }
+
+        String sqlInsert = "INSERT INTO reservation (numVol, passeport_pasasager, prixTotal, classeVol, idEmploye) VALUES (?, ?, ?, ?, ?)";
+
         try (Connection conn = ConnexionDB.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                     "INSERT INTO reservation (numVol, passeport_pasasager, prixTotal, classeVol) VALUES (?, ?, ?, ?)")) {
+             PreparedStatement stmt = conn.prepareStatement(sqlInsert)) {
+
             stmt.setString(1, volNum);
             stmt.setInt(2, Integer.parseInt(txtPasseport.getText()));
             stmt.setDouble(3, prix);
             stmt.setString(4, cmbClasse.getValue().name());
+
+            int idEmploye = UserSession.getUserId();
+            if (idEmploye == 0) {
+                afficherErreur("Aucun employé connecté : impossible d’enregistrer l’ID employé.");
+                return;
+            }
+            stmt.setInt(5, idEmploye);
+
             stmt.executeUpdate();
             afficherSucces("Réservation ajoutée avec succès !");
 
@@ -268,11 +284,17 @@ public class GestionReservationsController {
                 psUpdate.executeUpdate();
             }
 
-        } catch (Exception ex) { ex.printStackTrace(); }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            afficherErreur("Erreur lors de l'enregistrement : " + ex.getMessage());
+        }
 
         chargerReservationsDepuisBD();
         effacerChamps();
     }
+
+
+
 
 
     @FXML
@@ -499,6 +521,22 @@ public class GestionReservationsController {
     }
 
     }
+
+
+    public void allerStats(ActionEvent actionEvent) {  try {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_Statistiques.fxml"));
+        Parent root = loader.load();
+        Stage stage = (Stage) btnAjouter.getScene().getWindow();
+        stage.setScene(new Scene(root));
+        stage.setTitle("Statistiques");
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    }
+
+
+
     @FXML
     private void handleMouseEntered(MouseEvent event) {
         Button btn = (Button) event.getSource();
@@ -835,6 +873,31 @@ public class GestionReservationsController {
         info.setHeaderText("Fonctionnalité à venir");
         info.setContentText("La sauvegarde PDF nécessite l'ajout d'une bibliothèque externe (iText/PDFBox).");
         info.showAndWait();
+    }
+    @FXML
+    private void quitter() {
+        Stage stage = (Stage) btnAjouter.getScene().getWindow();
+        stage.close();
+    }
+    @FXML
+    private void deconnexion() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Login.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) btnAjouter.getScene().getWindow();
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Connexion - AeroManager");
+
+            stage.centerOnScreen();
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Erreur : Impossible de charger la vue Login.fxml");
+        }
     }
 
 }

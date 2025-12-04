@@ -10,7 +10,7 @@ public class HelloApplication extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         Parent root = FXMLLoader.load(getClass().getResource("Login.fxml"));
-        primaryStage.setTitle("Gestion des Aéroports");
+        primaryStage.setTitle("Connexion - AeroManager");
         primaryStage.setScene(new Scene(root));
         primaryStage.setResizable(false); 
         primaryStage.centerOnScreen();
