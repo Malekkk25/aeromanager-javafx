@@ -1,6 +1,7 @@
 package com.example.projet_java_vols.Gestion_des_vols.Controller;
 
 import com.example.projet_java_vols.ConnexionDB;
+import com.example.projet_java_vols.Gestion_des_vols.Model.UserSession;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -36,9 +37,24 @@ public class GestionStatsController implements Initializable {
     @FXML private BarChart<String, Number> barVolsDestination;
     @FXML private PieChart pieTypeVol;
 
+    @FXML private Button btnMenuEmployes;
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         lancerThreadStats();
+        gererDroitsAcces();
+    }
+
+    private void gererDroitsAcces() {
+        String role = UserSession.getRole();
+        if (role == null) role = "INVITE";
+
+        boolean isAdmin = role.equalsIgnoreCase("ADMIN") || role.equalsIgnoreCase("ADMINISTRATEUR");
+
+        if (btnMenuEmployes != null) {
+            btnMenuEmployes.setVisible(isAdmin);
+            btnMenuEmployes.setManaged(isAdmin);
+        }
     }
 
     @FXML
@@ -168,119 +184,48 @@ public class GestionStatsController implements Initializable {
 
     @FXML
     private void retourVols() {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/example/projet_java_vols/Gestion_Vols.fxml")
-            );
-            Parent root = loader.load();
-
-            Stage stage = (Stage) lblVolsJour.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("Gestion des Vols");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        nav("/com/example/projet_java_vols/Gestion_Vols.fxml", "Gestion des Vols");
     }
 
-    @FXML
-    private void allerAeroports() {
+    @FXML private void allerAeroports() { nav("/com/example/projet_java_vols/Gestion_Aeroport.fxml", "Gestion des Aéroports"); }
+    @FXML private void allerVols() { nav("/com/example/projet_java_vols/Gestion_Vols.fxml", "Gestion des Vols"); }
+    @FXML private void allerEscales() { nav("/com/example/projet_java_vols/Gestion_Escales.fxml", "Gestion des Escales"); }
+    @FXML private void allerReservations() { nav("/com/example/projet_java_vols/Gestion_Reservations.fxml", "Gestion des Réservations"); }
+    @FXML public void allerEmploye(ActionEvent actionEvent) { nav("/com/example/projet_java_vols/Gestion_employes.fxml", "Gestion des Employés"); }
+    @FXML public void allerStats(ActionEvent actionEvent) { nav("/com/example/projet_java_vols/Gestion_Statistiques.fxml", "Statistiques"); }
+
+    private void nav(String fxml, String titre) {
         try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/example/projet_java_vols/Gestion_Aeroport.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxml));
             Parent root = loader.load();
             Stage stage = (Stage) lblVolsJour.getScene().getWindow();
             stage.setScene(new Scene(root));
-            stage.setTitle("Gestion des Aéroports");
+            stage.setTitle(titre);
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    @FXML
-    private void allerVols() {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/example/projet_java_vols/Gestion_Vols.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) lblVolsJour.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("Gestion des Vols");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @FXML
-    private void allerEscales() {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/example/projet_java_vols/Gestion_Escales.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) lblVolsJour.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("Gestion des Escales");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @FXML
-    private void allerReservations() {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/example/projet_java_vols/Gestion_Reservations.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) lblVolsJour.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("Gestion des Réservations");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    public void allerEmploye(ActionEvent actionEvent) {  try {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_employes.fxml"));
-        Parent root = loader.load();
-        Stage stage = (Stage) lblVolsJour.getScene().getWindow();
-        stage.setScene(new Scene(root));
-        stage.setTitle("Gestion des employées");
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-
-    }
-
-
-    public void allerStats(ActionEvent actionEvent) {  try {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_Statistiques.fxml"));
-        Parent root = loader.load();
-        Stage stage = (Stage) lblVolsJour.getScene().getWindow();
-        stage.setScene(new Scene(root));
-        stage.setTitle("Statistiques");
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-
     }
 
     @FXML
     private void handleMouseEntered(MouseEvent event) {
-        Button btn = (Button) event.getSource();
-        btn.setStyle(btn.getStyle() + "-fx-background-color: #e0e7ff;");
+        if (event.getSource() instanceof Button btn) {
+            btn.setStyle(btn.getStyle() + "-fx-background-color: #e0e7ff;");
+        }
     }
 
     @FXML
     private void handleMouseExited(MouseEvent event) {
-        Button btn = (Button) event.getSource();
-        btn.setStyle(btn.getStyle().replace("-fx-background-color: #e0e7ff;", ""));
+        if (event.getSource() instanceof Button btn) {
+            btn.setStyle(btn.getStyle().replace("-fx-background-color: #e0e7ff;", ""));
+        }
     }
-
 
     @FXML
     private void quitter() {
         Stage stage = (Stage) lblVolsJour.getScene().getWindow();
         stage.close();
     }
+
     @FXML
     private void deconnexion() {
         try {
@@ -301,5 +246,4 @@ public class GestionStatsController implements Initializable {
             System.err.println("Erreur : Impossible de charger la vue Login.fxml");
         }
     }
-
 }

@@ -127,8 +127,6 @@ public class GestionVolsController implements Initializable {
         }
     }
 
-
-
     private void chargerAeroports() {
         listeAeroports.clear();
         try (Connection conn = ConnexionDB.getConnection();
@@ -160,10 +158,11 @@ public class GestionVolsController implements Initializable {
                 ArrayList<Escale> escales = new ArrayList<>();
                 HashMap<Integer, Reservation> reservations = new HashMap<>();
 
-                Date dateArrivee = rs.getDate("dateArrivee");
-                Date dateDepart = rs.getDate("dateDepart");
-                LocalTime heureArrivee = rs.getTime("heureArrivee") != null ? rs.getTime("heureArrivee").toLocalTime() : null;
-                LocalTime heureDepart = rs.getTime("heureDepart") != null ? rs.getTime("heureDepart").toLocalTime() : null;
+                java.sql.Date dateArrivee = parseSqlDate(rs.getObject("dateArrivee"));
+                java.sql.Date dateDepart = parseSqlDate(rs.getObject("dateDepart"));
+                LocalTime heureArrivee = parseSqlTime(rs.getObject("heureArrivee"));
+                LocalTime heureDepart = parseSqlTime(rs.getObject("heureDepart"));
+
                 double prixBase = rs.getDouble("prixBase");
                 double prixVol = rs.getDouble("prixVol");
 
@@ -214,6 +213,32 @@ public class GestionVolsController implements Initializable {
         }
         tableVols.setItems(listeVols);
         mettreAJourCompteur();
+    }
+
+    private java.sql.Date parseSqlDate(Object rawDate) {
+        if (rawDate == null) return null;
+        if (rawDate instanceof Number) {
+            return new java.sql.Date(((Number) rawDate).longValue());
+        }
+        try {
+            return java.sql.Date.valueOf(rawDate.toString());
+        } catch (IllegalArgumentException e) {
+            return new java.sql.Date(System.currentTimeMillis());
+        }
+    }
+
+    private LocalTime parseSqlTime(Object rawTime) {
+        if (rawTime == null) return null;
+        if (rawTime instanceof Number) {
+            return new java.sql.Time(((Number) rawTime).longValue()).toLocalTime();
+        }
+        try {
+            String t = rawTime.toString();
+            if (t.length() == 5) t += ":00";
+            return java.sql.Time.valueOf(t).toLocalTime();
+        } catch (IllegalArgumentException e) {
+            return LocalTime.now();
+        }
     }
 
     private Aeroport getAeroportById(String id) {
@@ -396,12 +421,12 @@ public class GestionVolsController implements Initializable {
             String heureDepart = txtHeureDepart.getText().trim();
             if (!heureDepart.contains(":")) heureDepart += ":00:00";
             else if (heureDepart.split(":").length == 2) heureDepart += ":00";
-            stmt.setTime(9, java.sql.Time.valueOf(heureDepart));
+            stmt.setString(9, heureDepart);
 
             String heureArrivee = txtHeureArrivee.getText().trim();
             if (!heureArrivee.contains(":")) heureArrivee += ":00:00";
             else if (heureArrivee.split(":").length == 2) heureArrivee += ":00";
-            stmt.setTime(10, java.sql.Time.valueOf(heureArrivee));
+            stmt.setString(10, heureArrivee);
 
             stmt.setDouble(11, prixBase);
             stmt.setDouble(12, prixTotal);
@@ -465,12 +490,12 @@ public class GestionVolsController implements Initializable {
             String heureDepart = txtHeureDepart.getText().trim();
             if (!heureDepart.contains(":")) heureDepart += ":00:00";
             else if (heureDepart.split(":").length == 2) heureDepart += ":00";
-            stmt.setTime(8, java.sql.Time.valueOf(heureDepart));
+            stmt.setString(8, heureDepart);
 
             String heureArrivee = txtHeureArrivee.getText().trim();
             if (!heureArrivee.contains(":")) heureArrivee += ":00:00";
             else if (heureArrivee.split(":").length == 2) heureArrivee += ":00";
-            stmt.setTime(9, java.sql.Time.valueOf(heureArrivee));
+            stmt.setString(9, heureArrivee);
 
             stmt.setDouble(10, prixBase);
             stmt.setDouble(11, prixTotal);
@@ -524,7 +549,6 @@ public class GestionVolsController implements Initializable {
             return;
         }
 
-
         if (hasVolDependencies(volSelectionne.getNumVol())) {
 
             afficherErreur("Impossible de supprimer ce vol.\n" +
@@ -555,7 +579,6 @@ public class GestionVolsController implements Initializable {
             }
         }
     }
-
 
     @FXML
     private void annulerAction() {
@@ -679,7 +702,6 @@ public class GestionVolsController implements Initializable {
             txtChampSpecifique1.requestFocus();
             return false;
         }
-
         return true;
     }
 
@@ -774,7 +796,6 @@ public class GestionVolsController implements Initializable {
             txtChampSpecifique1.setText(v.getNumeroAutorisationInternationale());
             chkExigenceVisa.setSelected(v.isExigenceVisa());
             txtTerminal.clear();
-
             lblPrixTotal.setText(String.format("%.2f €", v.getPrixVol()));
             lblDetailsPrix.setText(String.format(
                     "Base: %.2f€ | Tarif: %.2f€ | Taxes: %.2f€ | Visa: %.2f€",
@@ -895,9 +916,11 @@ public class GestionVolsController implements Initializable {
 
             List<LocalTime[]> intervalles = new ArrayList<>();
             while (rs.next()) {
-                LocalTime hd = rs.getTime("heureDepart").toLocalTime();
-                LocalTime ha = rs.getTime("heureArrivee").toLocalTime();
-                intervalles.add(new LocalTime[]{hd, ha});
+                LocalTime hd = parseSqlTime(rs.getObject("heureDepart"));
+                LocalTime ha = parseSqlTime(rs.getObject("heureArrivee"));
+                if(hd != null && ha != null) {
+                    intervalles.add(new LocalTime[]{hd, ha});
+                }
             }
 
             int dureeMinutes = 120;
@@ -974,5 +997,4 @@ public class GestionVolsController implements Initializable {
             System.err.println("Erreur : Impossible de charger la vue Login.fxml");
         }
     }
-
 }

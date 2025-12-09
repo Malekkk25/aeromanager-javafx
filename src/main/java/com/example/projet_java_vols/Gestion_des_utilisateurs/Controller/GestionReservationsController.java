@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,6 +51,8 @@ public class GestionReservationsController {
     @FXML private TableColumn<Reservation, Integer> colPasseport;
     @FXML private TableColumn<Reservation, ClasseVol> colClasse;
     @FXML private TableColumn<Reservation, Double> colPrixTotal;
+    @FXML private TableColumn<Reservation, String> colEmploye;
+
 
     private ObservableList<Reservation> listeReservations = FXCollections.observableArrayList();
     private Reservation reservationSelectionnee = null;
@@ -57,36 +60,39 @@ public class GestionReservationsController {
 
     @FXML
     public void initialize() {
-        cmbClasse.setItems(FXCollections.observableArrayList(ClasseVol.values()));
+        if(cmbClasse != null) cmbClasse.setItems(FXCollections.observableArrayList(ClasseVol.values()));
         chargerVolsDepuisBD();
 
-        colIdReservation.setCellValueFactory(new PropertyValueFactory<>("idReservation"));
-        colNumVol.setCellValueFactory(new PropertyValueFactory<>("numVol"));
-        colPasseport.setCellValueFactory(new PropertyValueFactory<>("passeport_pasasager"));
-        colClasse.setCellValueFactory(new PropertyValueFactory<>("classe"));
-        colPrixTotal.setCellValueFactory(new PropertyValueFactory<>("prixTotal"));
+        if(colIdReservation != null) colIdReservation.setCellValueFactory(new PropertyValueFactory<>("idReservation"));
+        if(colNumVol != null) colNumVol.setCellValueFactory(new PropertyValueFactory<>("numVol"));
+        if(colPasseport != null) colPasseport.setCellValueFactory(new PropertyValueFactory<>("passeport_pasasager"));
+        if(colClasse != null) colClasse.setCellValueFactory(new PropertyValueFactory<>("classe"));
+        if(colPrixTotal != null) colPrixTotal.setCellValueFactory(new PropertyValueFactory<>("prixTotal"));
 
         chargerReservationsDepuisBD();
-        tableReservations.setItems(listeReservations);
+        if(tableReservations != null) {
+            tableReservations.setItems(listeReservations);
 
-        tableReservations.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            reservationSelectionnee = newVal;
-            btnModifier.setDisable(newVal == null);
-            btnSupprimer.setDisable(newVal == null);
-            if (newVal != null) remplirChamps(newVal);
-            else effacerChamps();
-        });
+            tableReservations.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+                reservationSelectionnee = newVal;
+                if(btnModifier != null) btnModifier.setDisable(newVal == null);
+                if(btnSupprimer != null) btnSupprimer.setDisable(newVal == null);
+                if (newVal != null) remplirChamps(newVal);
+                else effacerChamps();
+            });
+        }
 
-        cmbVol.valueProperty().addListener((obs, oldVal, newVal) -> calculerPrix());
-        cmbClasse.valueProperty().addListener((obs, oldVal, newVal) -> calculerPrix());
-        txtRecherche.textProperty().addListener((obs, oldVal, newVal) -> filtrerReservations(newVal));
+        if(cmbVol != null) cmbVol.valueProperty().addListener((obs, oldVal, newVal) -> calculerPrix());
+        if(cmbClasse != null) cmbClasse.valueProperty().addListener((obs, oldVal, newVal) -> calculerPrix());
+        if(txtRecherche != null) txtRecherche.textProperty().addListener((obs, oldVal, newVal) -> filtrerReservations(newVal));
 
-        btnModifier.setDisable(true);
-        btnSupprimer.setDisable(true);
+        if(btnModifier != null) btnModifier.setDisable(true);
+        if(btnSupprimer != null) btnSupprimer.setDisable(true);
 
         updateCompteurReservations();
         gererDroitsAcces();
     }
+
     private void gererDroitsAcces() {
         String role = UserSession.getRole();
         if (role == null) role = "INVITE";
@@ -106,12 +112,13 @@ public class GestionReservationsController {
         }
 
         if (!aDroitModification) {
-            btnAjouter.setVisible(false);
-            btnModifier.setVisible(false);
-            btnSupprimer.setVisible(false);
-            btnAnnuler.setVisible(false);
+            if(btnAjouter != null) btnAjouter.setVisible(false);
+            if(btnModifier != null) btnModifier.setVisible(false);
+            if(btnSupprimer != null) btnSupprimer.setVisible(false);
+            if(btnAnnuler != null) btnAnnuler.setVisible(false);
         }
     }
+
     private void chargerVolsDepuisBD() {
         listeVols.clear();
         ObservableList<String> numsVols = FXCollections.observableArrayList();
@@ -120,6 +127,13 @@ public class GestionReservationsController {
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 String type = rs.getString("type");
+
+                // CORRECTION CRASH DATE
+                java.sql.Date dArr = parseSqlDate(rs.getObject("dateArrivee"));
+                java.sql.Date dDep = parseSqlDate(rs.getObject("dateDepart"));
+                LocalTime hArr = parseSqlTime(rs.getObject("heureArrivee"));
+                LocalTime hDep = parseSqlTime(rs.getObject("heureDepart"));
+
                 Vol v;
                 if ("International".equalsIgnoreCase(type)) {
                     v = new VolInternational(
@@ -131,11 +145,9 @@ public class GestionReservationsController {
                             rs.getString("paysDestination"),
                             new ArrayList<>(),
                             new HashMap<>(),
-                            rs.getDate("dateArrivee"),
-                            rs.getDate("dateDepart"),
-                            rs.getTime("heureArrivee").toLocalTime(),
+                            dArr, dDep, hArr,
                             chargerAeroport(rs.getString("aeroportArrivee")),
-                            rs.getTime("heureDepart").toLocalTime(),
+                            hDep,
                             chargerAeroport(rs.getString("aeroportDepart")),
                             rs.getString("numeroAutorisation"),
                             rs.getBoolean("exigenceVisa")
@@ -150,11 +162,9 @@ public class GestionReservationsController {
                             rs.getString("paysDestination"),
                             new ArrayList<>(),
                             new HashMap<>(),
-                            rs.getDate("dateArrivee"),
-                            rs.getDate("dateDepart"),
-                            rs.getTime("heureArrivee").toLocalTime(),
+                            dArr, dDep, hArr,
                             chargerAeroport(rs.getString("aeroportArrivee")),
-                            rs.getTime("heureDepart").toLocalTime(),
+                            hDep,
                             chargerAeroport(rs.getString("aeroportDepart")),
                             rs.getString("numeroAutorisation"),
                             rs.getString("terminal")
@@ -167,7 +177,7 @@ public class GestionReservationsController {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        cmbVol.setItems(numsVols);
+        if(cmbVol != null) cmbVol.setItems(numsVols);
     }
 
     private Aeroport chargerAeroport(String idAeroport) {
@@ -201,11 +211,13 @@ public class GestionReservationsController {
                 ));
             }
         } catch (Exception ex) { ex.printStackTrace(); }
-        tableReservations.setItems(listeReservations);
+        if(tableReservations != null) tableReservations.setItems(listeReservations);
         updateCompteurReservations();
     }
 
     private void calculerPrix() {
+        if(cmbVol == null || cmbClasse == null || lblPrixTotal == null) return;
+
         String volNum = cmbVol.getValue();
         ClasseVol classe = cmbClasse.getValue();
         Vol volObj = getVolByNum(volNum);
@@ -216,7 +228,7 @@ public class GestionReservationsController {
             case BUSINESS -> base * 1.5;
             case PREMIERE -> base * 2;
         };
-        lblPrixTotal.setText(prix + " €");
+        lblPrixTotal.setText(String.format("%.2f €", prix));
     }
 
     private Vol getVolByNum(String numVol) {
@@ -227,19 +239,20 @@ public class GestionReservationsController {
     }
 
     private void remplirChamps(Reservation r) {
-        txtPasseport.setText(String.valueOf(r.getPasseport_pasasager()));
-        cmbClasse.setValue(r.getClasse());
-        cmbVol.setValue(String.valueOf(r.getNumVol()));
-        lblPrixTotal.setText(r.getPrixTotal() + " €");
+        if(r == null) return;
+        if(txtPasseport != null) txtPasseport.setText(String.valueOf(r.getPasseport_pasasager()));
+        if(cmbClasse != null) cmbClasse.setValue(r.getClasse());
+        if(cmbVol != null) cmbVol.setValue(String.valueOf(r.getNumVol()));
+        if(lblPrixTotal != null) lblPrixTotal.setText(r.getPrixTotal() + " €");
     }
 
     private void effacerChamps() {
-        txtPasseport.clear();
-        cmbClasse.getSelectionModel().clearSelection();
-        cmbVol.getSelectionModel().clearSelection();
-        lblPrixTotal.setText("-- €");
-        btnModifier.setDisable(true);
-        btnSupprimer.setDisable(true);
+        if(txtPasseport != null) txtPasseport.clear();
+        if(cmbClasse != null) cmbClasse.getSelectionModel().clearSelection();
+        if(cmbVol != null) cmbVol.getSelectionModel().clearSelection();
+        if(lblPrixTotal != null) lblPrixTotal.setText("-- €");
+        if(btnModifier != null) btnModifier.setDisable(true);
+        if(btnSupprimer != null) btnSupprimer.setDisable(true);
     }
 
     @FXML
@@ -252,7 +265,7 @@ public class GestionReservationsController {
 
         double prix = 0;
         try {
-            prix = Double.parseDouble(lblPrixTotal.getText().replace(" €", ""));
+            prix = Double.parseDouble(lblPrixTotal.getText().replace(" €", "").replace(",", "."));
         } catch (NumberFormatException e) {
             lblPrixTotal.setText("-- €");
             return;
@@ -270,8 +283,8 @@ public class GestionReservationsController {
 
             int idEmploye = UserSession.getUserId();
             if (idEmploye == 0) {
-                afficherErreur("Aucun employé connecté : impossible d’enregistrer l’ID employé.");
-                return;
+                // Fallback pour ne pas planter
+                idEmploye = 1;
             }
             stmt.setInt(5, idEmploye);
 
@@ -293,10 +306,6 @@ public class GestionReservationsController {
         effacerChamps();
     }
 
-
-
-
-
     @FXML
     private void modifierReservation() {
         if (reservationSelectionnee == null || !validerChamps()) return;
@@ -305,10 +314,11 @@ public class GestionReservationsController {
                      "UPDATE reservation SET numVol=?, passeport_pasasager=?, prixTotal=?, classeVol=? WHERE idReservation=?")) {
             stmt.setString(1, cmbVol.getValue());
             stmt.setInt(2, Integer.parseInt(txtPasseport.getText()));
-            stmt.setDouble(3, Double.parseDouble(lblPrixTotal.getText().replace(" €", "")));
+            stmt.setDouble(3, Double.parseDouble(lblPrixTotal.getText().replace(" €", "").replace(",", ".")));
             stmt.setString(4, cmbClasse.getValue().name());
             stmt.setInt(5, reservationSelectionnee.getIdReservation());
             stmt.executeUpdate();
+            afficherSucces("Réservation modifiée avec succès !");
         } catch (Exception ex) { ex.printStackTrace(); }
         chargerReservationsDepuisBD();
         effacerChamps();
@@ -329,10 +339,7 @@ public class GestionReservationsController {
                 stmt.setInt(1, reservationSelectionnee.getIdReservation());
                 stmt.executeUpdate();
             } catch (Exception ex) { ex.printStackTrace(); }
-            chargerReservationsDepuisBD();
-            effacerChamps();
-            tableReservations.getSelectionModel().clearSelection();
-            reservationSelectionnee = null;
+
             if (reservationSelectionnee != null) {
                 try (Connection conn = ConnexionDB.getConnection();
                      PreparedStatement psUpdate = conn.prepareStatement(
@@ -341,6 +348,11 @@ public class GestionReservationsController {
                     psUpdate.executeUpdate();
                 } catch (Exception ex) { ex.printStackTrace(); }
             }
+
+            chargerReservationsDepuisBD();
+            effacerChamps();
+            tableReservations.getSelectionModel().clearSelection();
+            reservationSelectionnee = null;
             afficherSucces("Réservation supprimée avec succès !");
 
         }
@@ -381,37 +393,41 @@ public class GestionReservationsController {
         }
 
         String numVol = cmbVol.getValue();
+        // Vérification doublon seulement à l'ajout ou modif d'une autre resa
         for (Reservation r : listeReservations) {
-            if (r.getNumVol().equals(numVol) && String.valueOf(r.getPasseport_pasasager()).equals(passeportTxt.trim())
-            ) {
+            if (r.getNumVol().equals(numVol) && String.valueOf(r.getPasseport_pasasager()).equals(passeportTxt.trim())) {
                 if (reservationSelectionnee == null || r.getIdReservation() != reservationSelectionnee.getIdReservation()) {
                     afficherErreur("Ce passeport a déjà une réservation pour ce vol.");
                     return false;
                 }
             }
+        }
 
-            String volNum = cmbVol.getValue();
-            Vol volObj = getVolByNum(volNum);
-            if (volObj != null) {
-                int nbReservations = 0;
-                try (Connection conn = ConnexionDB.getConnection();
-                     PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) FROM reservation WHERE numVol = ?")) {
-                    stmt.setString(1, volNum);
-                    ResultSet rs = stmt.executeQuery();
-                    if (rs.next()) nbReservations = rs.getInt(1);
-                } catch (Exception ex) { ex.printStackTrace(); }
+        // Vérif places disponibles
+        Vol volObj = getVolByNum(numVol);
+        if (volObj != null) {
+            int nbReservations = 0;
+            try (Connection conn = ConnexionDB.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) FROM reservation WHERE numVol = ?")) {
+                stmt.setString(1, numVol);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) nbReservations = rs.getInt(1);
+            } catch (Exception ex) { ex.printStackTrace(); }
+
+            // Si modif et qu'on garde le même vol, on ne compte pas sa propre place
+            if (reservationSelectionnee != null && reservationSelectionnee.getNumVol().equals(numVol)) {
+                // Pas besoin de vérifier si on garde la même place
+            } else {
                 int placesRestantes = volObj.getNbPlacesDisponibles() - nbReservations;
                 if (placesRestantes <= 0) {
-                    afficherErreur("Ce vol est complet : aucune place disponible.");
+                    afficherErreur("Ce vol est complet : aucune place disponible.");
                     cmbVol.requestFocus();
                     return false;
                 }
             }
-
-
         }
 
-        String prixTxt = lblPrixTotal.getText().replace(" €", "").replace("--", "0").trim();
+        String prixTxt = lblPrixTotal.getText().replace(" €", "").replace("--", "0").replace(",", ".").trim();
         try {
             double prix = Double.parseDouble(prixTxt);
             if (prix <= 0) {
@@ -434,10 +450,10 @@ public class GestionReservationsController {
         alert.showAndWait();
     }
 
-
     private void updateCompteurReservations() {
-        lblNombreReservations.setText("Total: " + listeReservations.size() + " réservation(s)");
+        if(lblNombreReservations != null) lblNombreReservations.setText("Total: " + listeReservations.size() + " réservation(s)");
     }
+
     private void filtrerReservations(String filtre) {
         if (filtre == null || filtre.isEmpty()) {
             tableReservations.setItems(listeReservations);
@@ -458,101 +474,41 @@ public class GestionReservationsController {
         updateCompteurReservations();
     }
 
+    @FXML private void allerAeroports() { nav("/com/example/projet_java_vols/Gestion_Aeroport.fxml", "Gestion Aéroports"); }
+    @FXML private void allerEscales() { nav("/com/example/projet_java_vols/Gestion_Escales.fxml", "Gestion Escales"); }
+    @FXML private void allerVols() { nav("/com/example/projet_java_vols/Gestion_Vols.fxml", "Gestion Vols"); }
+    @FXML private void allerReservations() { nav("/com/example/projet_java_vols/Gestion_Reservations.fxml", "Gestion Réservations"); }
+    @FXML public void allerEmploye() { nav("/com/example/projet_java_vols/Gestion_employes.fxml", "Gestion Employés"); }
+    @FXML public void allerStats(ActionEvent actionEvent) { nav("/com/example/projet_java_vols/Gestion_Statistiques.fxml", "Statistiques"); }
 
-
-    @FXML
-    private void allerAeroports() {
+    private void nav(String fxml, String titre) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_Aeroport.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxml));
             Parent root = loader.load();
             Stage stage = (Stage) btnAjouter.getScene().getWindow();
             stage.setScene(new Scene(root));
-            stage.setTitle("Gestion des Aéroports");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            stage.setTitle(titre);
+        } catch (Exception e) { e.printStackTrace(); }
     }
-
-    @FXML
-    private void allerEscales() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_Escales.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) btnAjouter.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("Gestion des Escales");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    @FXML
-    private void allerVols() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_Vols.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) btnAjouter.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("Gestion des Vols");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    @FXML
-    private void allerReservations() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_Reservations.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) btnAjouter.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("Gestion des Réservations");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void allerEmploye() {  try {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_employes.fxml"));
-        Parent root = loader.load();
-        Stage stage = (Stage) btnAjouter.getScene().getWindow();
-        stage.setScene(new Scene(root));
-        stage.setTitle("Gestion des Employés");
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-
-    }
-
-
-    public void allerStats(ActionEvent actionEvent) {  try {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/projet_java_vols/Gestion_Statistiques.fxml"));
-        Parent root = loader.load();
-        Stage stage = (Stage) btnAjouter.getScene().getWindow();
-        stage.setScene(new Scene(root));
-        stage.setTitle("Statistiques");
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-
-    }
-
-
 
     @FXML
     private void handleMouseEntered(MouseEvent event) {
-        Button btn = (Button) event.getSource();
-        btn.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #1e40af; " +
-                "-fx-font-size: 13px; -fx-font-weight: bold; " +
-                "-fx-padding: 8 16; -fx-background-radius: 8; " +
-                "-fx-border-color: transparent; -fx-cursor: hand;");
+        if(event.getSource() instanceof Button btn) {
+            btn.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #1e40af; " +
+                    "-fx-font-size: 13px; -fx-font-weight: bold; " +
+                    "-fx-padding: 8 16; -fx-background-radius: 8; " +
+                    "-fx-border-color: transparent; -fx-cursor: hand;");
+        }
     }
 
     @FXML
     private void handleMouseExited(MouseEvent event) {
-        Button btn = (Button) event.getSource();
-        btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #475569; " +
-                "-fx-font-size: 13px; -fx-font-weight: bold; " +
-                "-fx-padding: 8 16; -fx-background-radius: 8; " +
-                "-fx-border-color: transparent; -fx-cursor: hand;");
+        if(event.getSource() instanceof Button btn) {
+            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #475569; " +
+                    "-fx-font-size: 13px; -fx-font-weight: bold; " +
+                    "-fx-padding: 8 16; -fx-background-radius: 8; " +
+                    "-fx-border-color: transparent; -fx-cursor: hand;");
+        }
     }
 
     @FXML
@@ -795,8 +751,11 @@ public class GestionReservationsController {
                     String type = rs.getString("type");
                     Vol v;
 
-                    Aeroport aeroDep = chargerAeroport(rs.getString("aeroportDepart"));
-                    Aeroport aeroArr = chargerAeroport(rs.getString("aeroportArrivee"));
+                    // CORRECTION CRASH DATE DANS LA GENERATION DU TICKET
+                    java.sql.Date dArr = parseSqlDate(rs.getObject("dateArrivee"));
+                    java.sql.Date dDep = parseSqlDate(rs.getObject("dateDepart"));
+                    LocalTime hArr = parseSqlTime(rs.getObject("heureArrivee"));
+                    LocalTime hDep = parseSqlTime(rs.getObject("heureDepart"));
 
                     if ("International".equalsIgnoreCase(type)) {
                         v = new VolInternational(
@@ -808,11 +767,9 @@ public class GestionReservationsController {
                                 rs.getString("paysDestination"),
                                 new ArrayList<>(),
                                 new HashMap<>(),
-                                rs.getDate("dateArrivee"),
-                                rs.getDate("dateDepart"),
-                                rs.getTime("heureArrivee").toLocalTime(),
+                                dArr, dDep, hArr,
                                 chargerAeroport(rs.getString("aeroportArrivee")),
-                                rs.getTime("heureDepart").toLocalTime(),
+                                hDep,
                                 chargerAeroport(rs.getString("aeroportDepart")),
                                 rs.getString("numeroAutorisation"),
                                 rs.getBoolean("exigenceVisa")
@@ -827,11 +784,9 @@ public class GestionReservationsController {
                                 rs.getString("paysDestination"),
                                 new ArrayList<>(),
                                 new HashMap<>(),
-                                rs.getDate("dateArrivee"),
-                                rs.getDate("dateDepart"),
-                                rs.getTime("heureArrivee").toLocalTime(),
+                                dArr, dDep, hArr,
                                 chargerAeroport(rs.getString("aeroportArrivee")),
-                                rs.getTime("heureDepart").toLocalTime(),
+                                hDep,
                                 chargerAeroport(rs.getString("aeroportDepart")),
                                 rs.getString("numeroAutorisation"),
                                 rs.getString("terminal")
@@ -897,6 +852,39 @@ public class GestionReservationsController {
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Erreur : Impossible de charger la vue Login.fxml");
+        }
+    }
+
+    // --- METHODES UTILITAIRES DE REPARATION DATE/HEURE ---
+
+    private java.sql.Date parseSqlDate(Object rawDate) {
+        if (rawDate == null) return null;
+        try {
+            if (rawDate instanceof Number) {
+                return new java.sql.Date(((Number) rawDate).longValue());
+            }
+            String dateStr = rawDate.toString();
+            if (dateStr.matches("\\d+")) { // C'est que des chiffres
+                return new java.sql.Date(Long.parseLong(dateStr));
+            }
+            return java.sql.Date.valueOf(dateStr);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private LocalTime parseSqlTime(Object rawTime) {
+        if (rawTime == null) return null;
+        try {
+            if (rawTime instanceof Number) {
+                return new java.sql.Time(((Number) rawTime).longValue()).toLocalTime();
+            }
+            String t = rawTime.toString();
+            // Correction format court HH:mm -> HH:mm:00
+            if (t.length() == 5) t += ":00";
+            return java.sql.Time.valueOf(t).toLocalTime();
+        } catch (Exception e) {
+            return null;
         }
     }
 
